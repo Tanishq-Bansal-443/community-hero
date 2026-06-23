@@ -151,6 +151,12 @@ export default function ReportPage() {
 
             status: "reported",
 
+            repairImageUrl: "",
+            verificationConfidence: null,
+            verificationReason: "",
+            fraudRisk: "",
+            resolvedAt: null,
+
             createdAt:
                 serverTimestamp(),
         });

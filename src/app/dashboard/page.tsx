@@ -10,6 +10,10 @@ import {
     doc,
     updateDoc,
 } from "firebase/firestore";
+import {
+    CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_UPLOAD_PRESET,
+} from "@/lib/cloudinary";
 import dynamic from "next/dynamic";
 
 const IssueMap = dynamic(
@@ -28,6 +32,12 @@ type Report = {
     status: string;
     latitude: number;
     longitude: number;
+
+    repairImageUrl?: string;
+    verificationConfidence?: number | null;
+    verificationReason?: string;
+    fraudRisk?: string;
+    resolvedAt?: any;
 };
 
 export default function DashboardPage() {
@@ -35,6 +45,14 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [userLocation, setUserLocation] =
         useState<[number, number] | null>(null);
+    const [selectedReport, setSelectedReport] =
+        useState<Report | null>(null);
+    const [repairFile, setRepairFile] =
+        useState<File | null>(null);
+    const [uploadingRepair, setUploadingRepair] =
+        useState(false);
+    const [showRepairUpload, setShowRepairUpload] =
+        useState(false);
 
     async function updateStatus(
         id: string,
@@ -54,6 +72,110 @@ export default function DashboardPage() {
                     : report
             )
         );
+    }
+
+    async function uploadRepairEvidence() {
+        if (!repairFile || !selectedReport) return;
+
+        setUploadingRepair(true);
+
+        try {
+            const formData = new FormData();
+
+            formData.append("file", repairFile);
+            formData.append(
+                "upload_preset",
+                CLOUDINARY_UPLOAD_PRESET
+            );
+
+            const uploadResponse = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+
+            const uploadData =
+                await uploadResponse.json();
+
+            const verificationResponse =
+                await fetch(
+                    "/api/verify-repair",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+                        body: JSON.stringify({
+                            originalImageUrl:
+                                selectedReport.imageUrl,
+
+                            repairImageUrl:
+                                uploadData.secure_url,
+                        }),
+                    }
+                );
+
+            const verificationData =
+                await verificationResponse.json();
+
+            if (!verificationData.success) {
+                alert(
+                    verificationData.error
+                );
+
+                return;
+            }
+
+            console.log(
+                "VERIFICATION:",
+                verificationData
+            );
+
+            const result =
+                verificationData.analysis;
+
+            await updateDoc(
+                doc(
+                    db,
+                    "reports",
+                    selectedReport.id
+                ),
+                {
+                    repairImageUrl:
+                        uploadData.secure_url,
+
+                    status: result.resolved
+                        ? "resolved"
+                        : "disputed",
+
+                    verificationConfidence:
+                        result.confidence,
+
+                    verificationReason:
+                        result.reason,
+
+                    fraudRisk:
+                        result.fraudRisk,
+                }
+            );
+
+            alert(
+                result.resolved
+                    ? "Issue verified and resolved"
+                    : "Issue disputed by AI"
+            );
+
+            setShowRepairUpload(false);
+            setSelectedReport(null);
+            setRepairFile(null);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setUploadingRepair(false);
+        }
     }
 
     useEffect(() => {
@@ -192,14 +314,30 @@ export default function DashboardPage() {
                             Severity: {report.severity}
                         </p>
 
+                        {report.verificationConfidence && (
+                            <div className="mt-2 text-sm">
+                                <p>
+                                    AI Confidence:{" "}
+                                    {report.verificationConfidence}%
+                                </p>
+
+                                <p>
+                                    Fraud Risk: {report.fraudRisk}
+                                </p>
+                            </div>
+                        )}
+
                         <div className="mt-2">
                             <span
                                 className={`px-3 py-1 rounded-full text-sm font-medium ${report.status === "resolved"
                                     ? "bg-green-100 text-green-700"
-                                    : report.status ===
-                                        "under_review"
+                                    : report.status === "under_review"
                                         ? "bg-yellow-100 text-yellow-700"
-                                        : "bg-red-100 text-red-700"
+                                        : report.status === "repair_submitted"
+                                            ? "bg-blue-100 text-blue-700"
+                                            : report.status === "disputed"
+                                                ? "bg-purple-100 text-purple-700"
+                                                : "bg-red-100 text-red-700"
                                     }`}
                             >
                                 {report.status}
@@ -207,37 +345,83 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="flex gap-2 mt-4">
-                            <button
-                                onClick={() =>
-                                    updateStatus(
-                                        report.id,
-                                        "under_review"
-                                    )
-                                }
-                                className="px-3 py-1 bg-yellow-500 text-white rounded"
-                            >
-                                Review
-                            </button>
+                            {report.status !== "resolved" &&
+                                report.status !== "disputed" && (
+                                    <button
+                                        onClick={() =>
+                                            updateStatus(
+                                                report.id,
+                                                "under_review"
+                                            )
+                                        }
+                                        className="px-3 py-1 bg-yellow-500 text-white rounded"
+                                    >
+                                        Review
+                                    </button>
+                                )}
 
-                            <button
-                                onClick={() =>
-                                    updateStatus(
-                                        report.id,
-                                        "resolved"
-                                    )
-                                }
-                                className="px-3 py-1 bg-green-600 text-white rounded"
-                            >
-                                Resolve
-                            </button>
+                            {report.status !== "resolved" &&
+                                report.status !== "disputed" && (
+                                    <button
+                                        onClick={() => {
+                                            setSelectedReport(report);
+                                            setShowRepairUpload(true);
+                                        }}
+                                        className="px-3 py-1 bg-blue-600 text-white rounded"
+                                    >
+                                        Submit Repair Evidence
+                                    </button>
+                                )}
+
                         </div>
 
                         <p className="mt-2">
                             {report.description}
                         </p>
+
+                        {report.verificationReason && (
+                            <div className="mt-3 p-3 rounded bg-gray-900 border border-gray-700">
+                                <p className="text-xs uppercase text-gray-400">
+                                    AI Verification
+                                </p>
+
+                                <p className="mt-1 text-sm">
+                                    {report.verificationReason}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
+
+            {showRepairUpload && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg w-96">
+                        <h2 className="text-xl font-bold mb-4">
+                            Upload Repair Evidence
+                        </h2>
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                                setRepairFile(
+                                    e.target.files?.[0] || null
+                                )
+                            }
+                        />
+
+                        <button
+                            onClick={uploadRepairEvidence}
+                            disabled={uploadingRepair}
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+                        >
+                            Upload
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </main>
     );
 }
