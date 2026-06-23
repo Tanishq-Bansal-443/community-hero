@@ -228,6 +228,23 @@ export default function DashboardPage() {
             r.severity?.toLowerCase() === "low"
     ).length;
 
+    const resolvedCount = reports.filter(
+        (r) => r.status === "resolved"
+    ).length;
+
+    const disputedCount = reports.filter(
+        (r) => r.status === "disputed"
+    ).length;
+
+    const resolutionRate =
+        reports.length > 0
+            ? Math.round(
+                (resolvedCount /
+                    reports.length) *
+                100
+            )
+            : 0;
+
     return (
         <main className="min-h-screen p-8">
             <h1 className="text-4xl font-bold mb-8">
@@ -247,31 +264,31 @@ export default function DashboardPage() {
 
                 <div className="border rounded-lg p-4">
                     <h3 className="text-lg font-semibold">
-                        High Severity
-                    </h3>
-
-                    <p className="text-3xl font-bold text-red-500">
-                        {highCount}
-                    </p>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-semibold">
-                        Medium Severity
-                    </h3>
-
-                    <p className="text-3xl font-bold text-yellow-500">
-                        {mediumCount}
-                    </p>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-semibold">
-                        Low Severity
+                        Resolved Issues
                     </h3>
 
                     <p className="text-3xl font-bold text-green-500">
-                        {lowCount}
+                        {resolvedCount}
+                    </p>
+                </div>
+
+                <div className="border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold">
+                        Resolution Rate
+                    </h3>
+
+                    <p className="text-3xl font-bold text-blue-500">
+                        {resolutionRate}%
+                    </p>
+                </div>
+
+                <div className="border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold">
+                        Disputed Reports
+                    </h3>
+
+                    <p className="text-3xl font-bold text-red-500">
+                        {disputedCount}
                     </p>
                 </div>
             </div>
