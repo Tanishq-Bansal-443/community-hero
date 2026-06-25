@@ -121,8 +121,12 @@ export default function ReportPage() {
         }
     }
 
+    console.log("Frontend location:", location);
+
     async function submitReport() {
         if (!analysis || !location) return;
+
+        console.log("Submitting location:", location);
 
         const response = await fetch("/api/report", {
             method: "POST",

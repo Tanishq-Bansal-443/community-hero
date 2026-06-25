@@ -21,6 +21,18 @@ export interface Report {
 
     fraudRisk: string;
 
+    // Number of citizens reporting the same issue
+    communityReports: number;
+
+    // Other citizen reports merged into this issue
+    supportingReports: {
+        imageUrl: string;
+        latitude: number;
+        longitude: number;
+        description: string;
+        reportedAt?: any;
+    }[];
+
     resolvedAt: Date | null;
 
     createdAt?: any;
