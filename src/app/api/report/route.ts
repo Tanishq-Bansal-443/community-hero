@@ -1,85 +1,25 @@
-import { NextResponse } from "next/server";
-import { model } from "@/lib/gemini";
+import { NextRequest, NextResponse } from "next/server";
+import { createReport } from "@/lib/services/report.service";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const { imageUrl } = await req.json();
+        const report = await req.json();
 
-        const prompt = `
-You are an AI civic issue detector.
-
-Analyze the image.
-
-First determine whether it represents a real community or public infrastructure issue.
-
-Examples of VALID issues:
-- pothole
-- garbage accumulation
-- broken streetlight
-- water logging
-- damaged road
-- sewage issue
-- public infrastructure damage
-
-Examples of INVALID images:
-- selfies
-- anime
-- pets
-- food
-- landscapes
-- memes
-- screenshots
-- random objects
-- people posing
-
-Return ONLY valid JSON.
-
-If it IS a community issue:
-
-{
-  "isCommunityIssue": true,
-  "issueType": "",
-  "severity": "",
-  "description": ""
-}
-
-If it is NOT a community issue:
-
-{
-  "isCommunityIssue": false,
-  "reason": ""
-}
-`;
-
-        const imageResponse = await fetch(imageUrl);
-
-        const imageBuffer =
-            Buffer.from(await imageResponse.arrayBuffer());
-
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    mimeType: "image/jpeg",
-                    data: imageBuffer.toString("base64"),
-                },
-            },
-        ]);
-
-        const text = result.response.text();
-
-        const analysis = JSON.parse(
-            text.replace(/```json|```/g, "").trim()
-        );
+        await createReport(report);
 
         return NextResponse.json({
             success: true,
-            analysis,
+            message: "Report created successfully",
         });
     } catch (error) {
-        return NextResponse.json({
-            success: false,
-            error: String(error),
-        });
+        console.error(error);
+
+        return NextResponse.json(
+            {
+                success: false,
+                error: "Failed to create report",
+            },
+            { status: 500 }
+        );
     }
 }

@@ -6,13 +6,6 @@ import {
     CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_UPLOAD_PRESET,
 } from "@/lib/cloudinary";
-import { db } from "@/lib/firebase";
-import {
-    collection,
-    addDoc,
-    serverTimestamp,
-} from "firebase/firestore";
-
 const LocationPicker = dynamic(
     () => import("@/components/LocationPicker"),
     {
@@ -77,7 +70,7 @@ export default function ReportPage() {
             setImageUrl(uploadData.secure_url);
 
             const analysisResponse = await fetch(
-                "/api/report",
+                "/api/analyze",
                 {
                     method: "POST",
                     headers: {
@@ -131,35 +124,33 @@ export default function ReportPage() {
     async function submitReport() {
         if (!analysis || !location) return;
 
-        await addDoc(collection(db, "reports"), {
-            imageUrl: analysis.imageUrl,
-
-            issueType:
-                analysis.issueType,
-
-            severity:
-                analysis.severity,
-
-            description:
-                analysis.description,
-
-            latitude:
-                location.latitude,
-
-            longitude:
-                location.longitude,
-
-            status: "reported",
-
-            repairImageUrl: "",
-            verificationConfidence: null,
-            verificationReason: "",
-            fraudRisk: "",
-            resolvedAt: null,
-
-            createdAt:
-                serverTimestamp(),
+        const response = await fetch("/api/report", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                imageUrl: analysis.imageUrl,
+                issueType: analysis.issueType,
+                severity: analysis.severity,
+                description: analysis.description,
+                latitude: location.latitude,
+                longitude: location.longitude,
+                status: "reported",
+                repairImageUrl: "",
+                verificationConfidence: null,
+                verificationReason: "",
+                fraudRisk: "",
+                resolvedAt: null,
+            }),
         });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            alert("Failed to submit report.");
+            return;
+        }
 
         alert(
             "Report submitted successfully!"

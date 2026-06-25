@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { model } from "@/lib/gemini";
 
 export async function POST(req: Request) {
@@ -5,29 +6,78 @@ export async function POST(req: Request) {
         const { imageUrl } = await req.json();
 
         const prompt = `
-Analyze this community issue image.
+You are an AI civic issue detector.
 
-Return:
-1. Issue Type
-2. Severity (Low/Medium/High)
-3. Short Description
+Analyze the image.
 
-Keep response under 100 words.
+First determine whether it represents a real community or public infrastructure issue.
+
+Examples of VALID issues:
+- pothole
+- garbage accumulation
+- broken streetlight
+- water logging
+- damaged road
+- sewage issue
+- public infrastructure damage
+
+Examples of INVALID images:
+- selfies
+- anime
+- pets
+- food
+- landscapes
+- memes
+- screenshots
+- random objects
+- people posing
+
+Return ONLY valid JSON.
+
+If it IS a community issue:
+
+{
+  "isCommunityIssue": true,
+  "issueType": "",
+  "severity": "",
+  "description": ""
+}
+
+If it is NOT a community issue:
+
+{
+  "isCommunityIssue": false,
+  "reason": ""
+}
 `;
+
+        const imageResponse = await fetch(imageUrl);
+
+        const imageBuffer =
+            Buffer.from(await imageResponse.arrayBuffer());
 
         const result = await model.generateContent([
             prompt,
-            imageUrl,
+            {
+                inlineData: {
+                    mimeType: "image/jpeg",
+                    data: imageBuffer.toString("base64"),
+                },
+            },
         ]);
 
-        return Response.json({
+        const text = result.response.text();
+
+        const analysis = JSON.parse(
+            text.replace(/```json|```/g, "").trim()
+        );
+
+        return NextResponse.json({
             success: true,
-            analysis: result.response.text(),
+            analysis,
         });
     } catch (error) {
-        console.error(error);
-
-        return Response.json({
+        return NextResponse.json({
             success: false,
             error: String(error),
         });
