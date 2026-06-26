@@ -8,29 +8,38 @@ export async function POST(req: Request) {
         const prompt = `
 You are an AI civic issue detector.
 
-Analyze the image.
+Analyze the image carefully.
 
-First determine whether it represents a real community or public infrastructure issue.
+Determine whether the image shows a REAL public infrastructure problem.
 
-Examples of VALID issues:
-- pothole
-- garbage accumulation
-- broken streetlight
-- water logging
-- damaged road
-- sewage issue
-- public infrastructure damage
+VALID ISSUE TYPES (choose EXACTLY ONE):
 
-Examples of INVALID images:
-- selfies
-- anime
-- pets
-- food
-- landscapes
-- memes
-- screenshots
-- random objects
-- people posing
+- Pothole
+- Garbage
+- Broken Streetlight
+- Water Logging
+- Sewage Issue
+
+You MUST return one of these five issue types EXACTLY.
+
+Do NOT invent new issue types.
+
+Examples:
+❌ Damaged Road
+❌ Road Damage
+❌ Cracked Road
+❌ Broken Asphalt
+
+These MUST all become:
+
+"Pothole"
+
+Severity MUST be one of:
+
+- Low
+- Medium
+- High
+- Severe
 
 Return ONLY valid JSON.
 
@@ -38,16 +47,16 @@ If it IS a community issue:
 
 {
   "isCommunityIssue": true,
-  "issueType": "",
-  "severity": "",
-  "description": ""
+  "issueType": "Pothole",
+  "severity": "High",
+  "description": "..."
 }
 
-If it is NOT a community issue:
+If NOT:
 
 {
   "isCommunityIssue": false,
-  "reason": ""
+  "reason": "..."
 }
 `;
 
@@ -71,6 +80,44 @@ If it is NOT a community issue:
         const analysis = JSON.parse(
             text.replace(/```json|```/g, "").trim()
         );
+
+        const VALID_TYPES = [
+            "Pothole",
+            "Garbage",
+            "Broken Streetlight",
+            "Water Logging",
+            "Sewage Issue",
+        ];
+
+        if (analysis.isCommunityIssue) {
+            const normalizedType = VALID_TYPES.find(
+                (type) =>
+                    type.toLowerCase() ===
+                    analysis.issueType?.toLowerCase()
+            );
+
+            analysis.issueType =
+                normalizedType ?? "Pothole";
+        }
+
+        const VALID_SEVERITY = [
+            "Low",
+            "Medium",
+            "High",
+            "Severe",
+        ];
+
+        if (analysis.isCommunityIssue) {
+            const normalizedSeverity =
+                VALID_SEVERITY.find(
+                    (level) =>
+                        level.toLowerCase() ===
+                        analysis.severity?.toLowerCase()
+                );
+
+            analysis.severity =
+                normalizedSeverity ?? "Medium";
+        }
 
         return NextResponse.json({
             success: true,

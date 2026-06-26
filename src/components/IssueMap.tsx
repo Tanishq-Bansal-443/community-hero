@@ -37,7 +37,7 @@ export default function IssueMap({
             center={center}
             zoom={15}
             style={{
-                height: "600px",
+                height: "450px",
                 width: "100%",
             }}
         >
