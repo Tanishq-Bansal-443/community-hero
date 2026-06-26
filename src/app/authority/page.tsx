@@ -35,12 +35,17 @@ type Report = {
     description: string;
     latitude: number;
     longitude: number;
+
     status:
     | "reported"
     | "under_review"
     | "resolved"
     | "disputed";
-    communityReports?: number;
+
+    affectedCount: number;
+    communityReports: number;
+    confirmedBy: string[];
+
     verificationConfidence?: number | null;
     verificationReason?: string;
     fraudRisk?: string;
@@ -546,7 +551,7 @@ export default function AuthorityDashboard() {
                     </span>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-8">
+                <div className="grid lg:grid-cols-2 gap-8 items-start">
                     {loading ? (
                         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-12 flex items-center justify-center">
                             <p className="text-slate-400 text-lg">Loading reports...</p>

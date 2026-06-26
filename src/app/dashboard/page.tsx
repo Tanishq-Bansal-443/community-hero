@@ -27,7 +27,9 @@ type Report = {
     latitude: number;
     longitude: number;
     status: string;
-    communityReports?: number;
+    affectedCount: number;
+    confirmedBy: string[];
+    communityReports: number;
     verificationConfidence?: number | null;
     verificationReason?: string;
     repairImageUrl?: string;

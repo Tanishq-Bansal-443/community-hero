@@ -1,4 +1,7 @@
 export interface Report {
+    userId: string;
+    userEmail: string;
+
     imageUrl: string;
 
     issueType: string;
@@ -27,6 +30,11 @@ export interface Report {
 
     // Number of citizens reporting the same issue
     communityReports: number;
+
+    // Total citizens affected (reports + confirmations)
+    affectedCount: number;
+
+    confirmedBy: string[];
 
     // Other citizen reports merged into this issue
     supportingReports: {

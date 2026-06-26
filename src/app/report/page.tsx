@@ -6,6 +6,8 @@ import {
     CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_UPLOAD_PRESET,
 } from "@/lib/cloudinary";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/providers/AuthProvider";
 const LocationPicker = dynamic(
     () => import("@/components/LocationPicker"),
     {
@@ -16,6 +18,8 @@ const LocationPicker = dynamic(
 export default function ReportPage() {
     const [imageUrl, setImageUrl] = useState("");
     const [uploading, setUploading] = useState(false);
+    const { user, loading } = useAuth();
+    const router = useRouter();
 
     const [location, setLocation] = useState<{
         latitude: number;
@@ -23,6 +27,12 @@ export default function ReportPage() {
     } | null>(null);
 
     const [analysis, setAnalysis] = useState<any>(null);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/auth");
+        }
+    }, [loading, user, router]);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
@@ -134,6 +144,9 @@ export default function ReportPage() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
+                userId: user!.uid,
+                userEmail: user!.email,
+
                 imageUrl: analysis.imageUrl,
                 issueType: analysis.issueType,
                 severity: analysis.severity,
@@ -162,6 +175,20 @@ export default function ReportPage() {
 
         setAnalysis(null);
         setImageUrl("");
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-xl font-semibold">
+                    Checking authentication...
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
     }
 
     return (

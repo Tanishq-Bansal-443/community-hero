@@ -6,12 +6,15 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
 } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(false);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
+    const router = useRouter();
 
     async function handleSubmit() {
         try {
@@ -21,14 +24,14 @@ export default function AuthPage() {
                     email,
                     password
                 );
-                alert("Logged in");
+                router.push("/");
             } else {
                 await createUserWithEmailAndPassword(
                     auth,
                     email,
                     password
                 );
-                alert("Account created");
+                router.push("/");
             }
         } catch (err: any) {
             alert(err.message);

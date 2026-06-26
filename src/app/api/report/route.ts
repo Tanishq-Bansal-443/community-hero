@@ -22,12 +22,16 @@ export async function POST(req: NextRequest) {
         console.log("Duplicate result:", duplicate);
 
         if (duplicate) {
-            await mergeDuplicateReport(duplicate.id, {
-                imageUrl: report.imageUrl,
-                latitude: report.latitude,
-                longitude: report.longitude,
-                description: report.description,
-            });
+            await mergeDuplicateReport(
+                duplicate.id,
+                report.userId,
+                {
+                    imageUrl: report.imageUrl,
+                    latitude: report.latitude,
+                    longitude: report.longitude,
+                    description: report.description,
+                }
+            );
 
             return NextResponse.json({
                 success: true,
