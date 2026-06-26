@@ -6,11 +6,13 @@ import Link from "next/link";
 import { db } from "@/lib/firebase";
 import {
     collection,
-    getDocs,
-    orderBy,
+    onSnapshot,
     query,
+    orderBy,
+    doc,
+    updateDoc,
+    serverTimestamp,
 } from "firebase/firestore";
-
 const IssueMap = dynamic(
     () => import("@/components/IssueMap"),
     {
@@ -113,14 +115,12 @@ export default function AuthorityDashboard() {
             () => { }
         );
 
-        async function fetchReports() {
-            const q = query(
-                collection(db, "reports"),
-                orderBy("createdAt", "desc")
-            );
+        const q = query(
+            collection(db, "reports"),
+            orderBy("createdAt", "desc")
+        );
 
-            const snapshot = await getDocs(q);
-
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             setReports(
                 snapshot.docs.map(
                     (doc) =>
@@ -132,9 +132,9 @@ export default function AuthorityDashboard() {
             );
 
             setLoading(false);
-        }
+        });
 
-        fetchReports();
+        return () => unsubscribe();
     }, []);
 
     const totalReports = reports.length;
