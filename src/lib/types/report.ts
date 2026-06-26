@@ -11,7 +11,11 @@ export interface Report {
 
     longitude: number;
 
-    status: "reported" | "under_review" | "resolved";
+    status:
+    | "reported"
+    | "under_review"
+    | "resolved"
+    | "disputed";
 
     repairImageUrl: string;
 
