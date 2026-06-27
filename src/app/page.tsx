@@ -1,11 +1,15 @@
-import app from "@/lib/firebase";
+import Hero from "@/components/landing/Hero";
+import HowItWorks from "@/components/landing/HowItWorks";
+import ProductShowcase from "@/components/landing/ProductShowcase";
+import Footer from "@/components/landing/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex items-center justify-center">
-      <h1 className="text-3xl font-bold">
-        Community Hero 🚀
-      </h1>
+    <main className="min-h-screen bg-slate-950 text-white">
+      <Hero />
+      <HowItWorks />
+      <ProductShowcase />
+      <Footer />
     </main>
   );
 }
