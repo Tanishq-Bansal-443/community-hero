@@ -1,42 +1,33 @@
 export interface Report {
+    // User info
     userId: string;
     userEmail: string;
 
+    // Image & issue details
     imageUrl: string;
-
     issueType: string;
-
-    severity: "Low" | "Medium" | "High";
-
+    severity: "Low" | "Medium" | "High" | "Severe"; // ← Added "Severe"
     description: string;
 
+    // Location
     latitude: number;
-
     longitude: number;
 
-    status:
-    | "reported"
-    | "under_review"
-    | "resolved"
-    | "disputed";
+    // Status
+    status: "reported" | "under_review" | "resolved" | "disputed";
 
-    repairImageUrl: string;
+    // Verification (optional)
+    repairImageUrl?: string | null;
+    verificationConfidence?: number | null;
+    verificationReason?: string;
+    fraudRisk?: string;
 
-    verificationConfidence: number | null;
-
-    verificationReason: string;
-
-    fraudRisk: string;
-
-    // Number of citizens reporting the same issue
+    // Community engagement
     communityReports: number;
-
-    // Total citizens affected (reports + confirmations)
     affectedCount: number;
-
     confirmedBy: string[];
 
-    // Other citizen reports merged into this issue
+    // Supporting reports (merged duplicates)
     supportingReports: {
         imageUrl: string;
         latitude: number;
@@ -45,7 +36,14 @@ export interface Report {
         reportedAt?: any;
     }[];
 
+    // Timestamps
     resolvedAt: Date | null;
-
     createdAt?: any;
+
+    // Re-verification tracking (optional)
+    previousRepairImageUrl?: string;
+    previousVerificationConfidence?: number | null;
+    previousVerificationReason?: string;
+    previousFraudRisk?: string;
+    verificationAttempts?: number;
 }

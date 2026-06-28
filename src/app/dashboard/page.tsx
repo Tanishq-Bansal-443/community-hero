@@ -28,11 +28,25 @@ type Report = {
     createdAt?: any;
 };
 
+// Helper: Calculate distance between two coordinates (Haversine formula)
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function CitizenDashboard() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [center, setCenter] = useState<[number, number]>([30.901, 75.8573]);
 
+    // Get user location
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -58,6 +72,7 @@ export default function CitizenDashboard() {
         loadReports();
     }, []);
 
+    // Computed values
     const activeReports = useMemo(
         () => reports.filter((r) => r.status !== "resolved"),
         [reports]
@@ -78,6 +93,31 @@ export default function CitizenDashboard() {
         return Math.round((resolvedReports.length / reports.length) * 100);
     }, [reports, resolvedReports]);
 
+    const totalAffected = useMemo(
+        () => reports.reduce((sum, r) => sum + (r.affectedCount || 0), 0),
+        [reports]
+    );
+
+    // Get the 4 NEAREST active reports (based on user's location)
+    const nearestActiveReports = useMemo(() => {
+        if (!center) return activeReports.slice(0, 4);
+
+        const withDistance = activeReports.map((report) => ({
+            ...report,
+            distance: getDistance(
+                center[0],
+                center[1],
+                report.latitude,
+                report.longitude
+            ),
+        }));
+
+        return withDistance
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 4);
+    }, [activeReports, center]);
+
+    // Helper functions
     function statusColor(status: string) {
         switch (status) {
             case "resolved":
@@ -140,7 +180,7 @@ export default function CitizenDashboard() {
                         </div>
                     </div>
 
-                    {/* Stats Cards - improved contrast */}
+                    {/* Stats Cards */}
                     <div className="grid grid-cols-2 gap-4 w-full max-w-md">
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg border border-white/20 hover:bg-white/20 transition">
                             <p className="text-sm text-cyan-100 font-medium">Active Issues</p>
@@ -166,6 +206,13 @@ export default function CitizenDashboard() {
                                 {resolutionRate}%
                             </h2>
                         </div>
+                        <div className="col-span-2 sm:col-span-1 bg-white/10 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg border border-white/20 hover:bg-white/20 transition">
+                            <p className="text-sm text-cyan-100 font-medium">Total Impact</p>
+                            <h2 className="text-3xl sm:text-4xl font-bold text-white mt-1">
+                                {totalAffected}
+                            </h2>
+                            <p className="text-xs text-cyan-200/80 mt-0.5">citizens affected</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -188,11 +235,11 @@ export default function CitizenDashboard() {
                         </div>
                     }
                 >
-                    <IssueMap reports={activeReports} center={center} />
+                    <IssueMap reports={reports} center={center} />
                 </Suspense>
             </section>
 
-            {/* ===== ACTIVE ISSUES ===== */}
+            {/* ===== ACTIVE ISSUES (NEAREST 4) ===== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-8 pb-12">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
                     <div>
@@ -200,12 +247,13 @@ export default function CitizenDashboard() {
                             Active Issues Near You
                         </h2>
                         <p className="text-slate-600 mt-1 text-sm sm:text-base">
-                            Stay informed about ongoing civic issues reported by your community.
+                            Showing the <strong>4 nearest</strong> active reports to your location.
+                            {activeReports.length > 4 && ` (${activeReports.length - 4} more nearby)`}
                         </p>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-sm font-medium bg-blue-100 text-blue-700 px-4 py-2 rounded-full whitespace-nowrap">
-                            {activeReports.length} Active
+                            {activeReports.length} Active Total
                         </span>
                         <Link
                             href="/report"
@@ -218,16 +266,16 @@ export default function CitizenDashboard() {
 
                 {loading ? (
                     <div className="text-center py-16 text-slate-500">Loading reports...</div>
-                ) : activeReports.length === 0 ? (
+                ) : nearestActiveReports.length === 0 ? (
                     <div className="bg-white rounded-3xl shadow p-10 text-center border border-slate-200">
-                        <h3 className="text-2xl font-semibold text-black">No Active Reports</h3>
+                        <h3 className="text-2xl font-semibold text-black">No Active Reports Nearby</h3>
                         <p className="text-slate-600 mt-3">
-                            Your community currently has no active civic issues nearby.
+                            No active civic issues near your current location.
                         </p>
                     </div>
                 ) : (
                     <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
-                        {activeReports.map((report) => (
+                        {nearestActiveReports.map((report) => (
                             <div
                                 key={report.id}
                                 className="bg-white rounded-3xl shadow hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200/50 hover:scale-[1.02]"
@@ -247,14 +295,24 @@ export default function CitizenDashboard() {
                                             <p className="text-slate-700 mt-1 text-sm sm:text-base line-clamp-2">
                                                 {report.description}
                                             </p>
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                📍 {(report as any).distance?.toFixed(1)} km away
+                                            </p>
                                         </div>
-                                        <span
-                                            className={`shrink-0 px-3 py-1 rounded-full text-sm font-semibold ${statusColor(
-                                                report.status
-                                            )}`}
-                                        >
-                                            {formatStatus(report.status)}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span
+                                                className={`shrink-0 px-3 py-1 rounded-full text-sm font-semibold ${statusColor(
+                                                    report.status
+                                                )}`}
+                                            >
+                                                {formatStatus(report.status)}
+                                            </span>
+                                            {report.verificationConfidence && (
+                                                <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                                    🤖 {report.verificationConfidence}%
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 mt-5">
@@ -284,6 +342,19 @@ export default function CitizenDashboard() {
                         ))}
                     </div>
                 )}
+
+                {/* VIEW ALL REPORTS BUTTON */}
+                <div className="text-center mt-8">
+                    <Link
+                        href="/all-reports"
+                        className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-500/25 hover:scale-105 active:scale-95"
+                    >
+                        📋 View All {activeReports.length} Reports →
+                    </Link>
+                    <p className="text-xs text-slate-500 mt-2">
+                        See all reports with advanced filtering and sorting
+                    </p>
+                </div>
             </section>
 
             {/* ===== RESOLVED ISSUES ===== */}
@@ -311,7 +382,7 @@ export default function CitizenDashboard() {
                     </div>
                 ) : (
                     <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
-                        {resolvedReports.map((report) => (
+                        {resolvedReports.slice(0, 4).map((report) => (
                             <div
                                 key={report.id}
                                 className="bg-white rounded-3xl shadow hover:shadow-xl transition-all duration-300 overflow-hidden border border-green-100/50 hover:scale-[1.01]"
@@ -367,6 +438,16 @@ export default function CitizenDashboard() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+                {resolvedReports.length > 4 && (
+                    <div className="text-center mt-6">
+                        <Link
+                            href="/all-reports"
+                            className="inline-flex items-center gap-2 text-green-600 font-medium hover:underline"
+                        >
+                            View all {resolvedReports.length} resolved reports →
+                        </Link>
                     </div>
                 )}
             </section>

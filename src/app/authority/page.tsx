@@ -45,15 +45,18 @@ type Report = {
 export default function AuthorityDashboard() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
     const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<
         "all" | "reported" | "under_review" | "resolved"
     >("all");
-    const [sortBy, setSortBy] = useState<"newest" | "severity" | "community">("newest");
+    const [sortBy, setSortBy] = useState<"newest" | "severity" | "community" | "affected">("newest");
     const [center, setCenter] = useState<[number, number]>([30.901, 75.857]);
     const repairInputRef = useRef<HTMLInputElement>(null);
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+    // ===== PAGINATION STATE =====
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
     // Helper functions
     function formatStatus(status: string): string {
@@ -62,42 +65,40 @@ export default function AuthorityDashboard() {
 
     function getSeverityColor(severity: string): string {
         switch (severity) {
-            case "Severe":
-                return "text-red-400";
-            case "High":
-                return "text-orange-400";
-            case "Medium":
-                return "text-yellow-400";
-            case "Low":
-                return "text-green-400";
-            default:
-                return "text-slate-400";
+            case "Severe": return "text-red-400";
+            case "High": return "text-orange-400";
+            case "Medium": return "text-yellow-400";
+            case "Low": return "text-green-400";
+            default: return "text-slate-400";
         }
     }
 
     function getStatusBadgeColor(status: string): string {
         switch (status) {
-            case "reported":
-                return "bg-amber-500/30 text-amber-300";
-            case "under_review":
-                return "bg-blue-500/30 text-blue-300";
-            case "resolved":
-                return "bg-green-500/30 text-green-300";
-            default:
-                return "bg-slate-800 text-slate-300";
+            case "reported": return "bg-amber-500/30 text-amber-300";
+            case "under_review": return "bg-blue-500/30 text-blue-300";
+            case "resolved": return "bg-green-500/30 text-green-300";
+            case "disputed": return "bg-red-500/30 text-red-300";
+            default: return "bg-slate-800 text-slate-300";
         }
     }
 
     function getFraudRiskColor(risk: string): string {
         switch (risk?.toLowerCase()) {
-            case "high":
-                return "text-red-400";
-            case "medium":
-                return "text-yellow-400";
-            case "low":
-                return "text-green-400";
-            default:
-                return "text-slate-400";
+            case "high": return "text-red-400";
+            case "medium": return "text-yellow-400";
+            case "low": return "text-green-400";
+            default: return "text-slate-400";
+        }
+    }
+
+    function getSeverityBadge(severity: string): string {
+        switch (severity) {
+            case "Severe": return "bg-red-500/20 text-red-400 border-red-500/30";
+            case "High": return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+            case "Medium": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+            case "Low": return "bg-green-500/20 text-green-400 border-green-500/30";
+            default: return "bg-slate-700 text-slate-300 border-slate-600";
         }
     }
 
@@ -123,35 +124,70 @@ export default function AuthorityDashboard() {
         return () => unsubscribe();
     }, []);
 
+    // ===== FULLY DYNAMIC STATS =====
     const totalReports = reports.length;
     const reportedCount = reports.filter((r) => r.status === "reported").length;
     const underReviewCount = reports.filter((r) => r.status === "under_review").length;
     const resolvedCount = reports.filter((r) => r.status === "resolved").length;
+    const disputedCount = reports.filter((r) => r.status === "disputed").length;
+
+    // Severe stats
     const severeCount = reports.filter((r) => r.severity === "Severe").length;
+    const severeUnresolved = reports.filter(
+        (r) => r.severity === "Severe" && r.status !== "resolved"
+    ).length;
+    const severeResolved = reports.filter(
+        (r) => r.severity === "Severe" && r.status === "resolved"
+    ).length;
+
+    // Community stats
     const communityReports = reports.reduce((sum, report) => sum + (report.communityReports ?? 1), 0);
+    const totalAffected = reports.reduce((sum, r) => sum + (r.affectedCount || 0), 0);
+
+    // AI stats
     const aiVerified = reports.filter(
         (r) => r.verificationConfidence !== null && r.verificationConfidence !== undefined
     ).length;
+    const aiVerificationRate = totalReports > 0 ? Math.round((aiVerified / totalReports) * 100) : 0;
 
+    // Fraud stats
+    const highFraudRisk = reports.filter((r) => r.fraudRisk?.toLowerCase() === "high").length;
+    const mediumFraudRisk = reports.filter((r) => r.fraudRisk?.toLowerCase() === "medium").length;
+    const lowFraudRisk = reports.filter((r) => r.fraudRisk?.toLowerCase() === "low").length;
+    const totalFraudAnalyzed = reports.filter((r) => r.fraudRisk).length;
+
+    // Derived
+    const activeCases = reportedCount + underReviewCount;
+    const resolutionRate = totalReports > 0 ? Math.round((resolvedCount / totalReports) * 100) : 0;
+
+    // Filtered Reports
     const filteredReports = useMemo(() => {
         let data = [...reports];
         if (statusFilter !== "all") {
             data = data.filter((r) => r.status === statusFilter);
-        }
-        if (search.trim()) {
-            const term = search.toLowerCase();
-            data = data.filter(
-                (r) => r.issueType.toLowerCase().includes(term) || r.description.toLowerCase().includes(term)
-            );
         }
         if (sortBy === "severity") {
             const order: Record<string, number> = { Severe: 4, High: 3, Medium: 2, Low: 1 };
             data.sort((a, b) => (order[b.severity] ?? 0) - (order[a.severity] ?? 0));
         } else if (sortBy === "community") {
             data.sort((a, b) => (b.communityReports ?? 1) - (a.communityReports ?? 1));
+        } else if (sortBy === "affected") {
+            data.sort((a, b) => (b.affectedCount || 0) - (a.affectedCount || 0));
         }
         return data;
-    }, [reports, search, statusFilter, sortBy]);
+    }, [reports, statusFilter, sortBy]);
+
+    // Pagination
+    const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+    const paginatedReports = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredReports.slice(start, start + itemsPerPage);
+    }, [filteredReports, currentPage]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, sortBy]);
 
     function handleReview(reportId: string) {
         setExpandedReportId((prev) => (prev === reportId ? null : reportId));
@@ -163,7 +199,6 @@ export default function AuthorityDashboard() {
                 status: "under_review",
                 updatedAt: serverTimestamp(),
             });
-            console.log("Report marked as under review");
         } catch (error) {
             console.error("Failed to update report:", error);
         }
@@ -182,6 +217,7 @@ export default function AuthorityDashboard() {
             const report = reports.find((r) => r.id === selectedReportId);
             if (!report) return;
 
+            // 1. Upload to Cloudinary
             const formData = new FormData();
             formData.append("file", file);
             formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
@@ -192,18 +228,41 @@ export default function AuthorityDashboard() {
             );
             const uploadData = await uploadResponse.json();
 
-            const verifyResponse = await fetch("/api/verify-repair", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    originalImageUrl: report.imageUrl,
-                    repairImageUrl: uploadData.secure_url,
-                }),
-            });
-            const verifyData = await verifyResponse.json();
+            // 2. Verify with Gemini (with retry)
+            let verifyData = null;
+            let attempts = 0;
+            const maxAttempts = 3;
 
-            if (!verifyData.success) {
-                alert("AI verification failed.");
+            while (attempts < maxAttempts) {
+                try {
+                    const verifyResponse = await fetch("/api/verify-repair", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            reportId: selectedReportId,
+                            originalImageUrl: report.imageUrl,
+                            repairImageUrl: uploadData.secure_url,
+                        }),
+                    });
+                    verifyData = await verifyResponse.json();
+
+                    if (verifyData.success) break;
+
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        console.log(`Retry ${attempts}/${maxAttempts}...`);
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                    }
+                } catch (retryError) {
+                    attempts++;
+                    console.log(`Attempt ${attempts} failed, retrying...`);
+                    if (attempts >= maxAttempts) throw retryError;
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+
+            if (!verifyData?.success) {
+                alert("AI verification failed after multiple attempts. Please try again.");
                 return;
             }
 
@@ -225,6 +284,7 @@ export default function AuthorityDashboard() {
             );
         } catch (error) {
             console.error(error);
+            alert("Error processing repair. Please try again.");
         }
     }
 
@@ -248,7 +308,7 @@ export default function AuthorityDashboard() {
                     <div className="flex gap-4 flex-wrap">
                         <Link
                             href="/dashboard"
-                            className="px-5 py-3 rounded-xl border border-slate-700 hover:bg-slate-800 transition hover:scale-105 active:scale-95"
+                            className="px-5 py-3 rounded-xl border border-slate-700 hover:bg-slate-800 transition hover:scale-105 active:scale-95 text-slate-300 hover:text-white"
                         >
                             Citizen Portal
                         </Link>
@@ -263,30 +323,33 @@ export default function AuthorityDashboard() {
             </section>
 
             {/* ===== STATS CARDS ===== */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-8 py-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 p-5 shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 hover:scale-105">
-                    <p className="text-slate-400 text-sm font-medium">Total Reports</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{totalReports}</h2>
-                </div>
-                <div className="bg-gradient-to-br from-amber-900/30 to-amber-950/30 rounded-2xl border border-amber-500/30 p-5 shadow-xl hover:shadow-amber-500/10 transition-all duration-300 hover:scale-105">
-                    <p className="text-amber-300 text-sm font-medium">Reported</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{reportedCount}</h2>
-                </div>
-                <div className="bg-gradient-to-br from-blue-900/30 to-blue-950/30 rounded-2xl border border-blue-500/30 p-5 shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:scale-105">
-                    <p className="text-blue-300 text-sm font-medium">Under Review</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{underReviewCount}</h2>
-                </div>
-                <div className="bg-gradient-to-br from-red-900/30 to-red-950/30 rounded-2xl border border-red-500/30 p-5 shadow-xl hover:shadow-red-500/10 transition-all duration-300 hover:scale-105">
-                    <p className="text-red-300 text-sm font-medium">High Priority</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{severeCount}</h2>
-                </div>
-                <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 rounded-2xl border border-green-500/30 p-5 shadow-xl hover:shadow-green-500/10 transition-all duration-300 hover:scale-105">
-                    <p className="text-green-300 text-sm font-medium">Resolved</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{resolvedCount}</h2>
-                </div>
-                <div className="bg-gradient-to-br from-cyan-900/30 to-cyan-950/30 rounded-2xl border border-cyan-500/30 p-5 shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 hover:scale-105">
-                    <p className="text-cyan-300 text-sm font-medium">Community Reports</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{communityReports}</h2>
+            <section className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 sm:gap-5">
+                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 p-5 shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 hover:scale-105">
+                        <p className="text-slate-400 text-sm font-medium">Total Reports</p>
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{totalReports}</h2>
+                    </div>
+                    <div className="bg-gradient-to-br from-amber-900/30 to-amber-950/30 rounded-2xl border border-amber-500/30 p-5 shadow-xl hover:shadow-amber-500/10 transition-all duration-300 hover:scale-105">
+                        <p className="text-amber-300 text-sm font-medium">Reported</p>
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{reportedCount}</h2>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-900/30 to-blue-950/30 rounded-2xl border border-blue-500/30 p-5 shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:scale-105">
+                        <p className="text-blue-300 text-sm font-medium">Under Review</p>
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{underReviewCount}</h2>
+                    </div>
+                    <div className="bg-gradient-to-br from-red-900/30 to-red-950/30 rounded-2xl border border-red-500/30 p-5 shadow-xl hover:shadow-red-500/10 transition-all duration-300 hover:scale-105">
+                        <p className="text-red-300 text-sm font-medium">Severe Issues</p>
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{severeCount}</h2>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-900/30 to-green-950/30 rounded-2xl border border-green-500/30 p-5 shadow-xl hover:shadow-green-500/10 transition-all duration-300 hover:scale-105">
+                        <p className="text-green-300 text-sm font-medium">Resolved</p>
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{resolvedCount}</h2>
+                    </div>
+                    <div className="bg-gradient-to-br from-cyan-900/30 to-cyan-950/30 rounded-2xl border border-cyan-500/30 p-5 shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 hover:scale-105">
+                        <p className="text-cyan-300 text-sm font-medium">Total Impact</p>
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">{totalAffected}</h2>
+                        <p className="text-xs text-cyan-400/70 mt-0.5">citizens affected</p>
+                    </div>
                 </div>
             </section>
 
@@ -296,92 +359,194 @@ export default function AuthorityDashboard() {
                     <div className="flex items-center justify-between mb-5">
                         <div>
                             <h2 className="text-2xl font-bold text-white">AI Operational Insights</h2>
-                            <p className="text-slate-300 mt-2">Live operational summary generated from incoming civic reports.</p>
+                            <p className="text-slate-300 mt-2">
+                                {reports.length === 0
+                                    ? "No reports yet. Community is looking good! 🎉"
+                                    : `Live operational summary from ${reports.length} reports.`}
+                            </p>
                         </div>
                         <span className="px-4 py-2 rounded-full bg-cyan-500/20 text-cyan-300 text-sm font-semibold flex items-center gap-2">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                             </span>
-                            Live
+                            {reports.length === 0 ? "Idle" : "Live"}
                         </span>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-5">
-                        <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
-                            <h3 className="font-semibold text-lg text-white">Critical Attention</h3>
-                            <p className="text-slate-300 mt-3 leading-relaxed">
-                                {severeCount} severe issue{severeCount === 1 ? "" : "s"} currently require immediate municipal action.
-                            </p>
+
+                    {reports.length === 0 ? (
+                        <div className="rounded-2xl bg-slate-800 border border-slate-700 p-8 text-center">
+                            <p className="text-slate-400 text-lg">No data to display yet. Reports will appear here as citizens submit them.</p>
                         </div>
-                        <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
-                            <h3 className="font-semibold text-lg text-white">Community Verification</h3>
-                            <p className="text-slate-300 mt-3 leading-relaxed">
-                                Citizens have submitted {communityReports} confirmations across all reported incidents.
-                            </p>
+                    ) : (
+                        <div className="grid md:grid-cols-2 gap-5">
+                            {/* Card 1: Severe Summary */}
+                            <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
+                                <h3 className="font-semibold text-lg text-white flex items-center gap-2">
+                                    {severeCount > 0 ? "🔴" : "🟢"} Severe Issues
+                                </h3>
+                                <div className="mt-3">
+                                    <p className="text-slate-300 leading-relaxed">
+                                        {severeCount === 0 && "No severe issues reported. Community is safe! ✅"}
+
+                                        {severeCount > 0 && (
+                                            <>
+                                                <span className="text-white font-bold">{severeCount}</span> severe issue{severeCount === 1 ? "" : "s"} reported.
+
+                                                {severeUnresolved === 0 && severeResolved > 0 && (
+                                                    <span className="block mt-2 text-green-400">
+                                                        ✅ All severe issues have been resolved! ({severeResolved} resolved)
+                                                    </span>
+                                                )}
+
+                                                {severeUnresolved > 0 && (
+                                                    <span className="block mt-2 text-amber-400">
+                                                        ⚠️ {severeUnresolved} severe issue{severeUnresolved === 1 ? "" : "s"} still {severeUnresolved === 1 ? "requires" : "require"} immediate municipal action.
+                                                        {severeResolved > 0 && ` (${severeResolved} resolved)`}
+                                                    </span>
+                                                )}
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Community Engagement */}
+                            <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
+                                <h3 className="font-semibold text-lg text-white">👥 Community Engagement</h3>
+                                <div className="mt-3">
+                                    <p className="text-slate-300 leading-relaxed">
+                                        <span className="text-white font-bold">{communityReports}</span> confirmations across
+                                        <span className="text-white font-bold"> {reports.length}</span> report{reports.length === 1 ? "" : "s"}.
+                                        {reports.length > 0 && (
+                                            <span className="block mt-1 text-slate-400 text-sm">
+                                                Average {Math.round(communityReports / reports.length)} confirmations per report
+                                            </span>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 3: AI Verification */}
+                            <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
+                                <h3 className="font-semibold text-lg text-white">🤖 AI Verification</h3>
+                                <div className="mt-3">
+                                    <p className="text-slate-300 leading-relaxed">
+                                        {aiVerified === 0 && "No reports have been AI verified yet. Upload repair evidence to get started."}
+
+                                        {aiVerified > 0 && (
+                                            <>
+                                                <span className="text-white font-bold">{aiVerificationRate}%</span> of reports verified by Gemini
+                                                <span className="block text-sm text-slate-400">
+                                                    ({aiVerified} of {reports.length} reports)
+                                                </span>
+                                                {aiVerificationRate >= 80 && (
+                                                    <span className="block mt-2 text-green-400">✅ Excellent AI coverage!</span>
+                                                )}
+                                                {aiVerificationRate >= 50 && aiVerificationRate < 80 && (
+                                                    <span className="block mt-2 text-yellow-400">📊 Good coverage, keep going!</span>
+                                                )}
+                                                {aiVerificationRate < 50 && aiVerificationRate > 0 && (
+                                                    <span className="block mt-2 text-blue-400">📈 Upload more repair evidence to improve verification rate.</span>
+                                                )}
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Fraud Detection */}
+                            <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
+                                <h3 className="font-semibold text-lg text-white">🛡️ Fraud Detection</h3>
+                                <div className="mt-3">
+                                    <p className="text-slate-300 leading-relaxed">
+                                        {totalFraudAnalyzed === 0 && "No fraud analysis has been performed yet."}
+
+                                        {totalFraudAnalyzed > 0 && (
+                                            <>
+                                                {highFraudRisk > 0 && (
+                                                    <span className="block text-red-400">
+                                                        🚨 {highFraudRisk} high-risk case{highFraudRisk === 1 ? "" : "s"} flagged
+                                                    </span>
+                                                )}
+                                                {mediumFraudRisk > 0 && (
+                                                    <span className="block text-yellow-400">
+                                                        ⚠️ {mediumFraudRisk} medium-risk case{mediumFraudRisk === 1 ? "" : "s"}
+                                                    </span>
+                                                )}
+                                                {lowFraudRisk > 0 && (
+                                                    <span className="block text-green-400">
+                                                        ✅ {lowFraudRisk} low-risk case{lowFraudRisk === 1 ? "" : "s"} verified
+                                                    </span>
+                                                )}
+                                                {disputedCount > 0 && (
+                                                    <span className="block mt-2 text-red-400">
+                                                        ⚠️ {disputedCount} dispute{disputedCount === 1 ? "" : "s"} pending review
+                                                    </span>
+                                                )}
+                                                {highFraudRisk === 0 && mediumFraudRisk === 0 && lowFraudRisk === 0 && disputedCount === 0 && totalFraudAnalyzed > 0 && (
+                                                    <span className="block text-green-400">✅ All analyzed reports show low fraud risk!</span>
+                                                )}
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
-                            <h3 className="font-semibold text-lg text-white">AI Verification</h3>
-                            <p className="text-slate-300 mt-3 leading-relaxed">
-                                {aiVerified} repairs have already been validated through Gemini.
-                            </p>
-                        </div>
-                        <div className="rounded-2xl bg-slate-800 border border-slate-700 p-5 hover:border-cyan-500/30 transition-all">
-                            <h3 className="font-semibold text-lg text-white">Operations Status</h3>
-                            <p className="text-slate-300 mt-3 leading-relaxed">
-                                {underReviewCount} reports are currently being processed by municipal authorities.
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
+                {/* Filters */}
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-lg hover:shadow-cyan-500/5 transition-all duration-300">
                     <h2 className="text-2xl font-bold text-white">Operations Filters</h2>
                     <div className="mt-6 space-y-5">
-                        <input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search issue..."
-                            className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 transition-all text-white placeholder-slate-400"
-                        />
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value as any)}
                             className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 transition-all text-white"
                         >
-                            <option value="all">All Reports</option>
-                            <option value="reported">Reported</option>
-                            <option value="under_review">Under Review</option>
-                            <option value="resolved">Resolved</option>
+                            <option value="all">All Reports ({reports.length})</option>
+                            <option value="reported">Reported ({reportedCount})</option>
+                            <option value="under_review">Under Review ({underReviewCount})</option>
+                            <option value="resolved">Resolved ({resolvedCount})</option>
                         </select>
                         <select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as "newest" | "severity" | "community")}
+                            onChange={(e) => setSortBy(e.target.value as "newest" | "severity" | "community" | "affected")}
                             className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 transition-all text-white"
                         >
                             <option value="newest">Sort: Newest</option>
                             <option value="severity">Sort: Severity</option>
                             <option value="community">Sort: Community Reports</option>
+                            <option value="affected">Sort: Most Affected</option>
                         </select>
+
                         <div className="border-t border-slate-800 pt-5">
                             <h3 className="font-semibold text-white mb-4">Live Overview</h3>
-                            <div className="space-y-4 text-sm">
+                            <div className="space-y-3 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Total Incidents</span>
                                     <span className="font-semibold text-white">{totalReports}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Active Cases</span>
-                                    <span className="font-semibold text-amber-400">
-                                        {reportedCount + underReviewCount}
-                                    </span>
+                                    <span className="font-semibold text-amber-400">{activeCases}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-slate-400">AI Verified Repairs</span>
+                                    <span className="text-slate-400">Resolution Rate</span>
+                                    <span className="font-semibold text-green-400">{resolutionRate}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">AI Verified</span>
                                     <span className="font-semibold text-cyan-400">{aiVerified}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Resolved</span>
                                     <span className="font-semibold text-green-400">{resolvedCount}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Disputed</span>
+                                    <span className="font-semibold text-red-400">{disputedCount}</span>
                                 </div>
                             </div>
                         </div>
@@ -416,16 +581,23 @@ export default function AuthorityDashboard() {
                 </div>
             </section>
 
-            {/* ===== INCIDENT QUEUE ===== */}
+            {/* ===== INCIDENT QUEUE WITH PAGINATION ===== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-8 py-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
                     <div>
                         <h2 className="text-3xl font-bold text-white">Incident Queue</h2>
                         <p className="text-slate-300 mt-2">Review, prioritize and resolve incoming civic reports.</p>
                     </div>
-                    <span className="rounded-full bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-medium text-white">
-                        {filteredReports.length} Reports
-                    </span>
+                    <div className="flex items-center gap-4">
+                        <span className="rounded-full bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-medium text-white">
+                            {filteredReports.length} Reports
+                        </span>
+                        {totalPages > 1 && (
+                            <span className="rounded-full bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-medium text-slate-400">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -433,15 +605,15 @@ export default function AuthorityDashboard() {
                         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-12 flex items-center justify-center">
                             <p className="text-slate-300 text-lg">Loading reports...</p>
                         </div>
-                    ) : filteredReports.length === 0 ? (
+                    ) : paginatedReports.length === 0 ? (
                         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-12 flex items-center justify-center">
                             <div className="text-center">
                                 <h3 className="text-2xl font-bold text-white">No Reports Found</h3>
-                                <p className="text-slate-300 mt-3">Try changing your filters or search query.</p>
+                                <p className="text-slate-300 mt-3">Try changing your filters.</p>
                             </div>
                         </div>
                     ) : (
-                        filteredReports.map((report) => {
+                        paginatedReports.map((report) => {
                             const isExpanded = expandedReportId === report.id;
                             return (
                                 <div
@@ -474,23 +646,31 @@ export default function AuthorityDashboard() {
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4 mt-6">
-                                            <div className="bg-slate-800 rounded-xl p-3 sm:p-4">
-                                                <p className="text-xs uppercase text-slate-400 tracking-wide font-medium">Severity</p>
-                                                <p className={`font-bold mt-2 ${getSeverityColor(report.severity)}`}>
-                                                    {report.severity}
-                                                </p>
-                                            </div>
-                                            <div className="bg-slate-800 rounded-xl p-3 sm:p-4">
-                                                <p className="text-xs uppercase text-slate-400 tracking-wide font-medium">Community Reports</p>
-                                                <p className="font-bold mt-2 text-white">👥 {report.communityReports ?? 1}</p>
-                                            </div>
-                                            <div className="bg-slate-800 rounded-xl p-3 sm:p-4 col-span-2">
-                                                <p className="text-xs uppercase text-slate-400 tracking-wide font-medium">Location</p>
-                                                <p className="font-semibold mt-2 text-sm text-slate-300">
-                                                    📍 {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
-                                                </p>
-                                            </div>
+                                        <div className="flex flex-wrap gap-2 mt-4">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getSeverityBadge(report.severity)}`}>
+                                                {report.severity}
+                                            </span>
+                                            <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-xs font-medium border border-slate-700">
+                                                👥 {report.affectedCount || 0} affected
+                                            </span>
+                                            <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-xs font-medium border border-slate-700">
+                                                📸 {report.communityReports || 1} reports
+                                            </span>
+                                            {report.verificationConfidence && (
+                                                <span className="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full text-xs font-medium border border-cyan-500/30">
+                                                    🤖 {report.verificationConfidence}%
+                                                </span>
+                                            )}
+                                            {report.fraudRisk && (
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${report.fraudRisk.toLowerCase() === "high"
+                                                    ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                                    : report.fraudRisk.toLowerCase() === "medium"
+                                                        ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                                                        : "bg-green-500/20 text-green-400 border-green-500/30"
+                                                    }`}>
+                                                    ⚠️ {report.fraudRisk} risk
+                                                </span>
+                                            )}
                                         </div>
 
                                         {/* EXPANDED VIEW */}
@@ -499,6 +679,9 @@ export default function AuthorityDashboard() {
                                                 <div className="bg-slate-800 rounded-xl p-4">
                                                     <p className="text-xs uppercase tracking-wide text-slate-400 font-medium mb-2">Full Description</p>
                                                     <p className="text-slate-300">{report.description}</p>
+                                                    <div className="mt-3 text-sm text-slate-400">
+                                                        📍 {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
+                                                    </div>
                                                 </div>
 
                                                 {report.repairImageUrl && (
@@ -611,18 +794,69 @@ export default function AuthorityDashboard() {
                                                 </>
                                             )}
                                         </div>
-
-                                        {!isExpanded && report.verificationConfidence && (
-                                            <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
-                                                <span>🤖 AI Verified: {report.verificationConfidence}% confidence</span>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             );
                         })
                     )}
                 </div>
+
+                {/* ===== PAGINATION CONTROLS ===== */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-3 mt-10">
+                        <button
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${currentPage === 1
+                                ? "bg-slate-800 text-slate-600 cursor-not-allowed"
+                                : "bg-slate-800 hover:bg-slate-700 text-white hover:scale-105 active:scale-95"
+                                }`}
+                        >
+                            ← Previous
+                        </button>
+
+                        <div className="flex gap-2">
+                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                let pageNum: number;
+                                if (totalPages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (currentPage <= 3) {
+                                    pageNum = i + 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                    pageNum = totalPages - 4 + i;
+                                } else {
+                                    pageNum = currentPage - 2 + i;
+                                }
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`w-10 h-10 rounded-xl font-semibold transition-all duration-300 ${currentPage === pageNum
+                                            ? "bg-cyan-500 text-slate-950 scale-105 shadow-lg shadow-cyan-500/25"
+                                            : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white hover:scale-105 active:scale-95"
+                                            }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                            {totalPages > 5 && currentPage < totalPages - 2 && (
+                                <span className="flex items-center text-slate-500">…</span>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${currentPage === totalPages
+                                ? "bg-slate-800 text-slate-600 cursor-not-allowed"
+                                : "bg-slate-800 hover:bg-slate-700 text-white hover:scale-105 active:scale-95"
+                                }`}
+                        >
+                            Next →
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Hidden file input */}
