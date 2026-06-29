@@ -12,6 +12,7 @@ const IssueMap = dynamic(() => import("@/components/IssueMap"), {
 
 type Report = {
     id: string;
+    userId: string;    
     imageUrl: string;
     issueType: string;
     severity: string;
