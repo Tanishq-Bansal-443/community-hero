@@ -20,16 +20,14 @@ import type { Report } from "@/lib/types/report";
  * Initializes counters and timestamps.
  */
 export async function createReport(report: Report) {
-    console.log(`[ReportService] Creating report at (${report.latitude}, ${report.longitude})`);
     return await addDoc(collection(db, "reports"), {
-        ...report,
+        ...report,           // ← Spread includes userId, imageUrl, etc.
         affectedCount: 1,
         confirmedBy: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     });
 }
-
 /**
  * Fetches all non-resolved reports of a given issue type.
  * Used for duplicate detection.

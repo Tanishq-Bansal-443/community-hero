@@ -11,6 +11,7 @@ import Link from "next/link";
 
 type Report = {
     id: string;
+    userId: string;
     issueType: string;
     severity: string;
     status: string;
@@ -37,12 +38,12 @@ const getEmojiForIssue = (issueType: string): string => {
 };
 
 const getColorForSeverity = (severity: string, status: string): string => {
-    if (status === "resolved") return "#10B981"; // emerald green
+    if (status === "resolved") return "#10B981";
     switch (severity) {
-        case "Severe": return "#EF4444"; // red
-        case "High": return "#F59E0B"; // orange
-        case "Medium": return "#3B82F6"; // blue
-        case "Low": return "#6B7280"; // gray
+        case "Severe": return "#EF4444";
+        case "High": return "#F59E0B";
+        case "Medium": return "#3B82F6";
+        case "Low": return "#6B7280";
         default: return "#3B82F6";
     }
 };
@@ -129,10 +130,8 @@ export default function IssueMap({
                 setIsDemoMode(false);
             },
             () => {
-                // Location denied – stay in demo mode
                 setHasLocation(false);
                 setIsDemoMode(true);
-                // Center on demo location or average of reports
                 if (reports.length > 0) {
                     const avgLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
                     const avgLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
@@ -144,7 +143,6 @@ export default function IssueMap({
         );
     }, [demoCenter, reports]);
 
-    // If reports change and we're in demo mode, recenter on average of reports (optional)
     useEffect(() => {
         if (isDemoMode && reports.length > 0) {
             const avgLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
@@ -255,9 +253,9 @@ export default function IssueMap({
     return (
         <div className="relative w-full overflow-hidden rounded-2xl shadow-lg ring-1 ring-slate-200 dark:ring-white/10">
             {/* ===== LOCATION CONTROLS (top-right) ===== */}
-            <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
-                {/* Demo Mode / Live indicator */}
-                <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-lg text-xs border border-slate-200 dark:border-white/10">
+            <div className="absolute top-4 right-4 z-[1000] pointer-events-none flex flex-col gap-2">
+                {/* Status indicator */}
+                <div className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-lg text-xs border border-slate-200 dark:border-white/10">
                     {hasLocation ? (
                         <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -271,24 +269,23 @@ export default function IssueMap({
                     )}
                 </div>
 
-                {/* "My Location" button (only if we have a user location) */}
+                {/* "My Location" button */}
                 {userLocation && (
                     <button
                         onClick={() => {
                             setMapCenter(userLocation);
                             setIsDemoMode(false);
                         }}
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm font-medium text-slate-700 dark:text-slate-300"
+                        className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm font-medium text-slate-700 dark:text-slate-300"
                     >
                         📍 My Location
                     </button>
                 )}
 
-                {/* "Show Demo Data" button (only if we have location and are not in demo mode) */}
+                {/* "Show All Reports" button */}
                 {hasLocation && !isDemoMode && (
                     <button
                         onClick={() => {
-                            // Center on the average of all reports (or demo center)
                             if (reports.length > 0) {
                                 const avgLat = reports.reduce((sum, r) => sum + r.latitude, 0) / reports.length;
                                 const avgLng = reports.reduce((sum, r) => sum + r.longitude, 0) / reports.length;
@@ -298,71 +295,73 @@ export default function IssueMap({
                             }
                             setIsDemoMode(true);
                         }}
-                        className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm font-medium text-blue-600 dark:text-blue-400"
+                        className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm font-medium text-blue-600 dark:text-blue-400"
                     >
                         🗺️ Show All Reports
                     </button>
                 )}
             </div>
 
-            {/* ===== LEGEND (bottom-left, unchanged) ===== */}
-            <div className="absolute top-4 left-4 z-[1000] bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-slate-200 dark:border-white/10 text-sm max-w-[160px]">
-                <p className="font-semibold text-slate-700 dark:text-white mb-2 text-xs uppercase tracking-wider">Issue Types</p>
-                <div className="space-y-1 text-sm">
-                    <div className="flex items-center gap-2">
-                        <span className="text-lg">🕳️</span>
-                        <span className="text-slate-600 dark:text-slate-300">Pothole</span>
+            {/* ===== LEGEND (top-left) ===== */}
+            <div className="absolute top-4 left-4 z-[1000] pointer-events-none">
+                <div className="pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-slate-200 dark:border-white/10 text-sm max-w-[160px]">
+                    <p className="font-semibold text-slate-700 dark:text-white mb-2 text-xs uppercase tracking-wider">Issue Types</p>
+                    <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">🕳️</span>
+                            <span className="text-slate-600 dark:text-slate-300">Pothole</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">🗑️</span>
+                            <span className="text-slate-600 dark:text-slate-300">Garbage</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">💡</span>
+                            <span className="text-slate-600 dark:text-slate-300">Streetlight</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">💧</span>
+                            <span className="text-slate-600 dark:text-slate-300">Water Logging</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">🤢</span>
+                            <span className="text-slate-600 dark:text-slate-300">Sewage</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-lg">🗑️</span>
-                        <span className="text-slate-600 dark:text-slate-300">Garbage</span>
+                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Resolved</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Severe</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">High</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Medium</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Low</span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <span className="font-semibold">Size</span> = Affected count
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-semibold">Badge</span> = Count (if &gt;1)
+                        </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-lg">💡</span>
-                        <span className="text-slate-600 dark:text-slate-300">Streetlight</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-lg">💧</span>
-                        <span className="text-slate-600 dark:text-slate-300">Water Logging</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-lg">🤢</span>
-                        <span className="text-slate-600 dark:text-slate-300">Sewage</span>
-                    </div>
-                </div>
-                <div className="mt-2 pt-2 border-t border-slate-200 dark:border-white/10">
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">Resolved</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">Severe</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">High</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">Medium</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-gray-500"></span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">Low</span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        <span className="font-semibold">Size</span> = Affected count
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        <span className="font-semibold">Badge</span> = Count (if &gt;1)
-                    </p>
                 </div>
             </div>
 
             {/* ===== MAP ===== */}
             <MapContainer
-                key={`${mapCenter[0]}-${mapCenter[1]}`} // Force re-render on center change
+                key={`${mapCenter[0]}-${mapCenter[1]}`}
                 center={mapCenter}
                 zoom={15}
                 className="h-72 sm:h-96 md:h-[450px] w-full"
@@ -474,38 +473,46 @@ export default function IssueMap({
                                     )}
 
                                     <div className="pt-3 border-t border-slate-200 dark:border-white/10">
-                                        <button
-                                            disabled={
-                                                loadingReportId === report.id ||
-                                                confirmedReports.has(report.id) ||
-                                                (user ? (report.confirmedBy ?? []).includes(user.uid) : false)
-                                            }
-                                            onClick={() => handleConfirm(report)}
-                                            className={`w-full py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${confirmedReports.has(report.id) ||
-                                                (user && (report.confirmedBy ?? []).includes(user.uid))
-                                                ? "bg-green-600 text-white cursor-not-allowed opacity-80"
-                                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95"
-                                                } disabled:opacity-60 disabled:cursor-not-allowed`}
-                                        >
-                                            {loadingReportId === report.id ? (
-                                                <>
-                                                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                    </svg>
-                                                    Confirming...
-                                                </>
-                                            ) : confirmedReports.has(report.id) ||
-                                                (user && (report.confirmedBy ?? []).includes(user.uid)) ? (
-                                                <>
-                                                    <span>✓</span> You're Affected
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span>📍</span> I'm Affected Too
-                                                </>
-                                            )}
-                                        </button>
+                                        {user && user.uid !== report.userId ? (
+                                            <button
+                                                disabled={
+                                                    loadingReportId === report.id ||
+                                                    confirmedReports.has(report.id) ||
+                                                    (report.confirmedBy ?? []).includes(user.uid)
+                                                }
+                                                onClick={() => handleConfirm(report)}
+                                                className={`w-full py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${confirmedReports.has(report.id) ||
+                                                    (report.confirmedBy ?? []).includes(user.uid)
+                                                    ? "bg-green-600 text-white cursor-not-allowed opacity-80"
+                                                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95"
+                                                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                            >
+                                                {loadingReportId === report.id ? (
+                                                    <>
+                                                        <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                        </svg>
+                                                        Confirming...
+                                                    </>
+                                                ) : confirmedReports.has(report.id) ||
+                                                    (report.confirmedBy ?? []).includes(user.uid) ? (
+                                                    <>
+                                                        <span>✓</span> You're Affected
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>📍</span> I'm Affected Too
+                                                    </>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            user && user.uid === report.userId && (
+                                                <div className="w-full py-2.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-center font-semibold text-sm">
+                                                    📝 You reported this issue
+                                                </div>
+                                            )
+                                        )}
                                     </div>
                                 </div>
                             </Popup>
