@@ -1,292 +1,226 @@
-# 🏆 Community Hero – Hyperlocal Problem Solver
+<div align="center">
 
-> 🏆 Built for the **Google Community Hero Hackathon**, organized by **Coding Ninjas**, leveraging **Google Gemini**, **Firebase**, and **Google Cloud** to build an AI-powered civic issue resolution platform.
+# 🏆 Community Hero
+### AI-Powered Hyperlocal Civic Issue Reporting & Resolution Platform
 
-**Community Hero** is an AI-powered civic issue management platform that enables citizens to report local infrastructure problems using images. Google Gemini automatically classifies issues, estimates severity, and assists authorities by verifying repair evidence through before-and-after image comparison.
+![Community Hero Hackathon 2026](https://img.shields.io/badge/Community_Hero_Hackathon-2026-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![Organized by Coding Ninjas](https://img.shields.io/badge/Organized_by-Coding_Ninjas-FF6B6B?style=for-the-badge)
+![License MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)
 
-## 🚀 Live Demo
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+![Gemini AI](https://img.shields.io/badge/Gemini_AI-8E75B2?style=for-the-badge&logo=googlebard&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)
 
-**https://community-hero--community-hero-e0906.asia-southeast1.hosted.app**
+Built for the **Google Community Hero Hackathon**, organized by **Coding Ninjas**, leveraging **Google Gemini**, **Firebase**, and **Google Cloud** to build an AI-powered civic issue resolution platform.
 
----
+[Live Demo](https://community-hero--community-hero-e0906.asia-southeast1.hosted.app)
 
-# 📋 Table of Contents
-
-- [✨ Features](#-features)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [🏗️ Architecture](#️-architecture)
-- [🚀 Getting Started](#-getting-started)
-- [🔑 Environment Variables](#-environment-variables)
-- [📸 Screenshots](#-screenshots)
-- [📂 Repository Structure](#-repository-structure)
-- [🚀 Deployment](#-deployment)
-- [🤝 Contributing](#-contributing)
-- [🙏 Acknowledgements](#-acknowledgements)
-
----
-
-# ✨ Features
-
-- 🤖 **AI Issue Detection**
-  - Google Gemini automatically detects civic issues from uploaded images.
-  - Identifies issue type (Pothole, Garbage, Streetlight, Water Logging, Sewage).
-  - Estimates severity (Low, Medium, High, Severe).
+</div>
 
 ---
 
-- ✅ **AI Repair Verification**
-  - Compares before-and-after images.
-  - Verifies completed repairs.
-  - Detects potential fraudulent repair submissions.
+## 📖 Table of Contents
+
+- [Project Overview](#-project-overview)
+- [Hackathon Requirements (Judges' Guide)](#-hackathon-requirements-judges-guide)
+- [Key Features](#-key-features)
+- [Google Technologies Utilized](#-google-technologies-utilized)
+- [Tech Stack](#️-tech-stack)
+- [System Architecture](#️-system-architecture)
+- [Application Flow](#-application-flow)
+- [Screenshots](#-screenshots)
+- [Repository Structure](#-repository-structure)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Deployment](#-deployment)
+- [Future Improvements](#-future-improvements)
+- [Contributing](#-contributing)
+- [Acknowledgements](#-acknowledgements)
+- [Contact](#-contact)
 
 ---
 
-- 🔄 **Re-Verification Workflow**
-  - Disputed repairs can be resubmitted.
-  - AI performs another verification using new evidence.
+## 🌍 Project Overview
+
+### The Problem
+Traditional civic reporting systems are broken: manual routing, subjective prioritization, bureaucratic bottlenecks, and "black-hole" feedback loops where citizens never hear back about their complaints. This leads to frustrated citizens, wasted municipal resources, and deteriorating infrastructure.
+
+### The Community Hero Solution
+**Community Hero** is an AI-powered civic issue management platform that enables citizens to report local infrastructure problems using images. Google Gemini automatically classifies issues, estimates severity, and assists authorities by verifying repair evidence through before-and-after image comparison — bringing transparency, speed, and intelligence to civic issue resolution.
 
 ---
 
-- 🎯 **Smart Duplicate Detection**
-  - Automatically merges reports within a **100 m radius**.
-  - Prevents duplicate complaints and spam.
+## 🏆 Hackathon Requirements (Judges' Guide)
+
+<details open>
+<summary><b>Click to expand Hackathon Details</b></summary>
+
+| Criteria | Implementation in Community Hero |
+| :--- | :--- |
+| **Problem Statement** | Community Hero – Hyperlocal Problem Solver. Empowers citizens to instantly report and track local civic issues while equipping authorities with an AI-assisted review and verification dashboard. |
+| **Theme Alignment** | AI for Smart Cities. Integrates Gemini directly into the civic issue lifecycle — from detection to repair verification — to create transparent, self-organizing urban maintenance workflows. |
+| **Solution Overview** | An end-to-end platform bridging citizens and authorities via AI-powered classification, severity estimation, duplicate detection, community validation, and repair verification. |
+| **Impact & Community Benefits** | Reduces issue triage time from days to seconds. Promotes civic engagement through real-time tracking and community validation. Helps authorities detect fraudulent repair claims. |
+| **Innovation & AI Capabilities** | Multimodal image-based issue detection, AI-driven severity scoring, smart duplicate merging within a 100m radius, and AI-powered before/after repair verification with re-verification workflows. |
+
+</details>
 
 ---
 
-- 👥 **Community Validation**
-  - Citizens can confirm they are affected.
-  - Higher validation increases issue priority.
+## ✨ Key Features
+
+### 🤖 AI & Automation
+- **AI Issue Detection** — Google Gemini automatically detects civic issues from uploaded images, identifying type (Pothole, Garbage, Streetlight, Water Logging, Sewage) and estimating severity (Low, Medium, High, Severe).
+- **AI Repair Verification** — Compares before-and-after images to verify completed repairs and flag potentially fraudulent submissions.
+- **Re-Verification Workflow** — Disputed repairs can be resubmitted with new evidence for another round of AI verification.
+- **Smart Duplicate Detection** — Automatically merges reports within a 100m radius to prevent duplicate complaints and spam.
+
+### 🏙️ Civic & Authority Tools
+- **Community Validation** — Citizens can confirm they're affected by an issue; higher validation increases its priority.
+- **Interactive Issue Map** — Live emoji markers (🕳️🗑️💡💧🤢) with marker size scaling dynamically by affected citizen count.
+- **Citizen Dashboard** — Nearby issues, live statistics, filtering & sorting, and an interactive map view.
+- **Authority Dashboard** — Incident management, AI insights, fraud detection, and repair verification in one place.
+- **Real-Time Synchronization** — Firestore `onSnapshot` keeps all devices updated instantly.
+
+### 🎨 UI / UX
+- **Responsive Design** — Consistent experience across mobile, tablet, and desktop.
+- **Role-Based Access** — Separate, tailored experiences for Citizens and Authorities.
 
 ---
 
-- 🗺️ **Interactive Issue Map**
-  - Live emoji markers (🕳️🗑️💡💧🤢).
-  - Marker size scales dynamically with affected citizen count.
+## ⚡ Google Technologies Utilized
+
+| Technology | Purpose in Community Hero |
+| :--- | :--- |
+| **Gemini API** | The core brain — multimodal image analysis for issue detection, severity scoring, and before/after repair verification. |
+| **Firebase Firestore** | Real-time NoSQL database powering live issue updates across citizen and authority dashboards. |
+| **Firebase Authentication** | Secure, role-based authentication for citizens and authorities. |
+| **Firebase App Hosting (Cloud Run)** | Serverless deployment of the Next.js application with automatic scaling. |
+| **Google AI Studio** | Used to prototype and validate Gemini prompts and structured JSON output schemas before backend integration. |
 
 ---
 
-- 📊 **Citizen Dashboard**
-  - Nearby issues
-  - Live statistics
-  - Filtering & sorting
-  - Interactive map
-
----
-
-- 🏛️ **Authority Dashboard**
-  - Incident management
-  - AI insights
-  - Fraud detection
-  - Repair verification
-
----
-
-- ⚡ **Real-Time Synchronization**
-  - Firestore `onSnapshot` keeps all devices updated instantly.
-
----
-
-# 🛠️ Tech Stack
+## 🛠️ Tech Stack
 
 ### 🎨 Frontend
-- Next.js 16 (App Router)
-- React
-- TypeScript
-- Tailwind CSS
+- ![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=flat&logo=next.js&logoColor=white) **Next.js 16 (App Router)**
+- ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB) **React**
+- ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=flat&logo=typescript&logoColor=white) **TypeScript**
+- ![Tailwind CSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=flat&logo=tailwind-css&logoColor=white) **Tailwind CSS**
 
 ### ⚙️ Backend
-- Next.js API Routes
-- Serverless Functions
+- **Next.js API Routes** — Serverless functions for analysis, reporting, and verification endpoints.
 
-### 🗄️ Database
-- Firebase Firestore (Real-Time NoSQL)
-
-### 🔐 Authentication
-- Firebase Authentication
+### 🗄️ Database & Auth
+- ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black) **Firebase Firestore** — Real-time NoSQL database
+- **Firebase Authentication** — Secure user auth
 
 ### 🤖 Artificial Intelligence
-- Google Gemini Flash
+- **Google Gemini Flash** — Issue detection, severity scoring, repair verification
 
 ### 🖼️ Image Storage
-- Cloudinary
+- ![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=flat&logo=cloudinary&logoColor=white) **Cloudinary**
 
 ### 🗺️ Maps
-- Leaflet
-- OpenStreetMap
+- **Leaflet** & **OpenStreetMap**
 
 ### ☁️ Deployment
-- Firebase App Hosting (Cloud Run)
+- ![Google Cloud](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=flat&logo=google-cloud&logoColor=white) **Firebase App Hosting (Cloud Run)**
 
 ---
-
-# 🏗️ Architecture
 
 ## 🏗️ System Architecture
 
-```text
-                    Community Hero
+```mermaid
+graph TD
+    %% Entities
+    Citizen((🧑‍🤝‍🧑 Citizen))
+    Authority((🏛️ Authority))
 
-      ┌──────────────────────────────────┐
-      │         Next.js Frontend         │
-      │                                  │
-      │ • Landing Page                   │
-      │ • Citizen Dashboard              │
-      │ • Authority Dashboard            │
-      │ • Report Form                    │
-      │ • Interactive Map                │
-      └──────────────┬───────────────────┘
-                     │
-             Next.js API Routes
-                     │
-     ┌───────────────┼────────────────┐
-     │               │                │
-     ▼               ▼                ▼
- Gemini API     Firebase        Cloudinary
-                Firestore
-                    │
-                    ▼
-             Real-Time Updates
-```
+    %% Frontend
+    subgraph Frontend [Client - Next.js / React]
+        WebUI[Web App UI]
+        Map[Interactive Issue Map - Leaflet]
+    end
 
-## Data Flow
+    %% Backend
+    subgraph Backend [Next.js API Routes]
+        ReportAPI[Report API]
+        AnalyzeAPI[Analyze API]
+        VerifyAPI[Verify Repair API]
+    end
 
-```text
-Citizen uploads image
-        │
-        ▼
-Frontend calls /analyze
-        │
-        ▼
-Gemini analyzes image
-        │
-        ▼
-Issue Type + Severity Generated
-        │
-        ▼
-Report Saved to Firestore
-        │
-        ▼
-Interactive Map Updates
-        │
-        ▼
-Community Validation
-        │
-        ▼
-Authority Reviews Report
-        │
-        ▼
-Repair Image Uploaded
-        │
-        ▼
-Gemini Compares Before & After Images
-        │
-        ▼
-Status Updated
-        ├──► Resolved
-        └──► Rejected / Needs Re-Verification
+    %% Google / External Services
+    subgraph Services [AI & Cloud Services]
+        Gemini[🤖 Gemini Flash API]
+        Cloudinary[🖼️ Cloudinary]
+    end
+
+    %% Database
+    subgraph Database [Storage]
+        Firestore[(Firebase Firestore)]
+    end
+
+    %% Flow
+    Citizen -->|Uploads Image + Location| WebUI
+    WebUI -->|REST Call| AnalyzeAPI
+    AnalyzeAPI <-->|Image Analysis| Gemini
+    AnalyzeAPI --> ReportAPI
+    ReportAPI <--> Firestore
+    WebUI <-->|Image Upload| Cloudinary
+    Map <-->|Live Data| Firestore
+
+    Firestore -->|Real-Time Updates| Authority
+    Authority -->|Review / Repair Upload| VerifyAPI
+    VerifyAPI <-->|Before/After Comparison| Gemini
+    VerifyAPI --> Firestore
 ```
 
 ---
 
-# 🚀 Getting Started
+## 🔄 Application Flow
 
-## Prerequisites
+```mermaid
+flowchart LR
+    A([📱 Citizen Reports Issue]) --> B{📸 Uploads Image & Location}
+    B --> C[🧠 Gemini Analyzes Issue]
+    C -->|Type + Severity Generated| D[(Report Saved to Firestore)]
+    D --> E[🗺️ Map & Dashboard Update]
+    E --> F[👥 Community Validation]
+    F --> G[🏛️ Authority Reviews Report]
+    G --> H[🛠️ Repair Image Uploaded]
+    H --> I[🧠 Gemini Compares Before & After]
+    I -->|Verified| J([✅ Status: Resolved])
+    I -->|Disputed| K([🔄 Needs Re-Verification])
 
-- Node.js (v18 or later)
-- npm or yarn
-- Firebase Project
-- Google AI Studio API Key
-- Cloudinary Account
-
-## Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/Tanishq-Bansal-443/community-hero.git
-cd community-hero
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure Environment Variables
-
-Create a `.env.local` file in the project root.
-
-### 4. Start Development Server
-
-```bash
-npm run dev
-```
-
-### 5. Open the Application
-
-```text
-http://localhost:3000
+    style A fill:#4285F4,stroke:#fff,stroke-width:2px,color:#fff
+    style C fill:#8E75B2,stroke:#fff,stroke-width:2px,color:#fff
+    style I fill:#8E75B2,stroke:#fff,stroke-width:2px,color:#fff
+    style J fill:#34A853,stroke:#fff,stroke-width:2px,color:#fff
 ```
 
 ---
 
-# 🔑 Environment Variables
+## 📸 Screenshots
 
-```env
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+| Landing Page | Citizen Dashboard |
+| :---: | :---: |
+| ![Landing Page](public/screenshots/landing-page.png) | ![Citizen Dashboard](public/screenshots/citizen-dashboard.png) |
+| **AI Issue Detection & Report Review** | **AI Repair Verification** |
+| ![AI Issue Detection](public/screenshots/authority-review.png) | ![AI Repair Verification](public/screenshots/ai-repair-detection.png) |
+| **Authority Dashboard** | |
+| ![Authority Dashboard](public/screenshots/authority-dashboard.png) | |
 
-# Gemini AI
-GEMINI_API_KEY=your_gemini_api_key
-
-# Cloudinary
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
-```
+> *Gemini analyzes reported civic issues, classifies severity, and assists authorities during the review and repair-verification process.*
 
 ---
 
-# 📸 Screenshots
-
-## Landing Page
-
-![Landing Page](public/screenshots/landing-page.png)
-
----
-
-## Citizen Dashboard
-
-![Citizen Dashboard](public/screenshots/citizen-dashboard.png)
-
----
-
-## AI Issue Detection & Report Review
-
-> *Gemini analyzes reported civic issues, classifies severity, and assists authorities during the review process.*
-
-![AI Issue Detection](public/screenshots/authority-review.png)
-
----
-
-## AI Repair Verification
-
-![AI Repair Verification](public/screenshots/ai-repair-detection.png)
-
----
-
-## Authority Dashboard
-
-![Authority Dashboard](public/screenshots/authority-dashboard.png)
-
----
-
-# 📂 Repository Structure
+## 📂 Repository Structure
 
 ```text
 community-hero/
@@ -309,6 +243,7 @@ community-hero/
 │   │   └── utils/
 │   └── providers/
 ├── public/
+│   └── screenshots/
 ├── firebase.json
 ├── package.json
 └── .env.local
@@ -316,39 +251,117 @@ community-hero/
 
 ---
 
-# 🚀 Deployment
+## 🚀 Getting Started
 
-The application is deployed using **Firebase App Hosting (Cloud Run).**
+### Prerequisites
+- Node.js (v18 or later)
+- npm or yarn
+- Firebase Project
+- Google AI Studio API Key
+- Cloudinary Account
 
-## Build
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Tanishq-Bansal-443/community-hero.git
+cd community-hero
+```
 
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+Create a `.env.local` file in the project root (see [Environment Variables](#-environment-variables) below).
+
+### 4. Start Development Server
+```bash
+npm run dev
+```
+
+### 5. Open the Application
+```text
+http://localhost:3000
+```
+
+---
+
+## 🔑 Environment Variables
+
+```env
+# Firebase
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Gemini AI
+GEMINI_API_KEY=your_gemini_api_key
+
+# Cloudinary
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+```
+
+> [!IMPORTANT]
+> You must add your own `GEMINI_API_KEY` in `.env.local` to use the AI capabilities of this project.
+
+---
+
+## 🌐 Deployment
+
+The application is deployed using **Firebase App Hosting (Cloud Run)**.
+
+### Build
 ```bash
 npm run build
 ```
 
-## Deploy
-
+### Deploy
 ```bash
 firebase deploy --only hosting
 ```
 
-## Live Demo
-
+### Live Demo
 **https://community-hero--community-hero-e0906.asia-southeast1.hosted.app**
 
 ---
 
-# 🤝 Contributing
+## 🔮 Future Improvements
 
-This project was developed for the **Google Community Hero Hackathon**.
-
-Contributions, suggestions, and feedback are welcome.
+We have a broader vision for Community Hero. Post-hackathon, we plan to implement:
+- **IoT Sensor Sync** — Connecting smart city sensors (water pressure, traffic) to automatically open tickets.
+- **Predictive Maintenance Insights** — AI-driven forecasting of infrastructure degradation hotspots.
+- **Satellite / Drone Monitoring** — Macro-level detection of infrastructure shifts and large-scale damage.
+- **Emergency Alert Broadcasts** — Push notifications to citizens based on hyperlocal critical hazards.
+- **Blockchain Verification** — Immutable ledgers for municipal budget allocation and repair completion proof.
 
 ---
 
-# 🙏 Acknowledgements
+## 🤝 Contributing
+
+This project was developed for the **Google Community Hero Hackathon**, organized by **Coding Ninjas**.
+
+Contributions, suggestions, and feedback are welcome — feel free to open an issue or submit a pull request.
+
+---
+
+## 🙏 Acknowledgements
 
 - **Google** — For providing Gemini API, Google AI Studio, Firebase, and Firebase App Hosting.
 - **Coding Ninjas** — For organizing and hosting the Community Hero Hackathon and providing an excellent platform to build impactful AI-powered solutions.
 - **Cloudinary** — For image storage and delivery.
 - **Leaflet & OpenStreetMap** — For enabling the interactive mapping experience.
+
+---
+
+## 📫 Contact
+
+For any inquiries, feedback, or collaboration opportunities, feel free to open an issue on the [repository](https://github.com/Tanishq-Bansal-443/community-hero).
+
+<div align="center">
+<br>
+<i>Crafted with ❤️ for the Google Community Hero Hackathon</i>
+</div>
